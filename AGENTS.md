@@ -6,6 +6,20 @@ You're reading this because a human cloned `classroom-video-dl` and asked you to
 
 To download all video recordings from a specific Google Classroom course onto their local machine, ending up with `.mp4` files in `./recordings/`.
 
+## How this tool works (short version)
+
+Each lecture in Google Classroom is a Google Drive file. Drive's video player calls an internal API (`workspacevideo-pa.clients6.google.com/.../playback`) that returns signed MP4 URLs. This tool replicates that call from a persistent Playwright Chromium profile (which holds the user's Google session cookies), gets the signed URL, and pipes the bytes to disk through Chrome DevTools Protocol's `Fetch.takeResponseBodyAsStream`. No yt-dlp, no cookie scraping from the user's main browser — Playwright manages its own Chromium with its own profile dir.
+
+**Pipeline stages (in order):**
+
+1. **auth** — open Chromium headed, user signs into Google (one-time human handoff).
+2. **scrape** — Playwright walks Classroom's Classwork page (`/t/all`), clicks each material to expand it, harvests Drive links.
+3. **plan** — Python filter keeps only video-keyworded attachments (English + Hebrew terms, plus `.mp4/.mov/.m4v` extensions).
+4. **download** — parallel CDP-streamed downloads; `.part` files for safety, atomic rename on success, 5-pass retries, dedup by Drive ID.
+5. **verify** — ffprobe sanity-checks every MP4 against the plan.
+
+If you understand this much, you can debug most failure modes. The exit-code table below maps stage-specific failures to remediation.
+
 ## What you need to ask the human
 
 **Course URL.** A link like `https://classroom.google.com/c/<course-id>` — the course they want videos from. They have to have access to it themselves; this tool doesn't bypass anything.
@@ -47,6 +61,12 @@ When you run `node scripts/auth_profile.cjs`:
 
 If the user already signed in once, `auth_profile.cjs` detects the existing profile and exits immediately. Skip the handoff text in that case.
 
+**Important: bash timeout.** After printing the initial sign-in prompt, the script polls silently every 5 seconds until sign-in is detected. Stdout stays quiet — that is **not a hang**. The script itself waits up to 30 minutes for the user.
+
+**If your tooling defaults to a short bash timeout, override it to at least 10 minutes for this command.** Claude Code: pass `timeout: 600000` (ms) on the Bash tool call. Codex / Cursor / others: use their equivalent. Otherwise your wrapper will cut off before the human finishes signing in, even though the script itself is fine.
+
+The same long-timeout rule applies to any command run with `LOGIN=1` headed mode.
+
 ## The workflow
 
 ```bash
@@ -78,6 +98,17 @@ python3 scripts/verify_recordings.py
 | 6 | Drive playback API failure | Video may be restricted, or the cookie went stale mid-run. Re-run auth, retry. |
 | 7 | Per-file download timeout (12 h) | Bandwidth or network issue. Re-run; downloads resume via dedup. |
 | 9 | No items found on Classroom page | User may not actually have access to that course, or the URL is wrong. |
+
+## Things that look weird but are normal
+
+Don't escalate these to the user as errors — they're expected:
+
+- **`title=undefined` in download logs.** Drive's playback API sometimes omits `videoDetails.title`. The downloader falls back to `drive_<id>.mp4`. Dedup still works (it matches Drive ID substring in the filename).
+- **Two `.mp4`s per lecture.** Some Classroom items attach a backup recording with a different Drive ID. Both will download — that's intentional.
+- **Silent stdout during sign-in.** See the bash-timeout note above.
+- **Hebrew lecture titles.** The plan filter recognizes Hebrew video keywords (`הקלטה`, `הקלטת`) by design. English-only courses just never see them.
+- **First run downloads ~150 MB.** That's `npx playwright install chromium` fetching the bundled browser. Subsequent runs are fast.
+- **`No items found` on first scrape after `LOGIN=1`.** Occasionally Classroom's React app doesn't fully hydrate. Re-run; almost always works second time.
 
 ## What NOT to do
 
