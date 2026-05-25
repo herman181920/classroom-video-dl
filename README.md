@@ -19,7 +19,7 @@ It uses the same Drive playback API your browser uses, with auth proxied through
 
 ```bash
 # 1. Install
-git clone https://github.com/<user>/classroom-video-dl
+git clone https://github.com/herman181920/classroom-video-dl
 cd classroom-video-dl
 npm install
 npx playwright install chromium
