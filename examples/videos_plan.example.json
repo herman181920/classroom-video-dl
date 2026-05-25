@@ -1,0 +1,24 @@
+{
+  "videos": [
+    {
+      "drive_id": "1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7",
+      "title": "Lecture 1 — Intro",
+      "parent": "Week 1 | Lecture 1 — Intro",
+      "kind": "drive_file"
+    },
+    {
+      "drive_id": "9z8y7x6w5v4u3t2s1r0q9p8o7n6m5l4k3",
+      "title": "Lecture 2 — Foundations",
+      "parent": "Week 2 | Lecture 2 — Foundations",
+      "kind": "drive_file"
+    }
+  ],
+  "skipped": [
+    {
+      "title": "Course intro video (YouTube)",
+      "parent": "Week 0 | Welcome",
+      "kind": "external",
+      "reason": "no driveId (likely external link)"
+    }
+  ]
+}

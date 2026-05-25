@@ -9,3 +9,8 @@ course_map.json
 .env
 *.log
 _scrape_debug.*
+
+# Personal development artifacts — these contain the original audit
+# narrative which references redacted source material. Kept on disk
+# for reference, not published.
+docs/superpowers/
