@@ -15,6 +15,46 @@ Given a Google Classroom course URL and your sign-in, it:
 
 It uses the same Drive playback API your browser uses, with auth proxied through a persistent Playwright profile. No bypass of access controls — you only get what your account can already see.
 
+## Architecture
+
+How it fits together:
+
+```mermaid
+flowchart LR
+    user([You])
+    cvd["classroom-video-dl<br/>local CLI"]
+    classroom["Google Classroom"]
+    drive["Google Drive"]
+    user -->|sign in once,<br/>run commands| cvd
+    cvd -->|walks Classwork<br/>via Playwright| classroom
+    cvd -->|playback API +<br/>byte stream| drive
+```
+
+Inside the tool — the pipeline stages and where state lives:
+
+```mermaid
+flowchart TB
+    auth["auth_profile.cjs<br/>headed sign-in"]
+    scrape["scrape_classroom.cjs<br/>walks Classwork DOM"]
+    plan["plan_videos.py<br/>filters to videos"]
+    download["download_parallel.cjs<br/>CDP-streamed MP4s"]
+    verify["verify_recordings.py<br/>ffprobe sanity check"]
+    profile[("Playwright profile<br/>$COURSE_DL_PROFILE<br/>session cookies")]
+    scrapeOut[/"fresh_scrape.json"/]
+    planOut[/"videos_plan.json"/]
+    recordings[/"./recordings/*.mp4"/]
+
+    auth --> profile
+    profile --> scrape
+    scrape --> scrapeOut
+    scrapeOut --> plan
+    plan --> planOut
+    profile --> download
+    planOut --> download
+    download --> recordings
+    recordings --> verify
+```
+
 ## Quick start
 
 ```bash
