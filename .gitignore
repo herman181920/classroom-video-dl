@@ -1,0 +1,11 @@
+node_modules/
+recordings/
+*.mp4
+fresh_scrape.json
+videos_plan.json
+course_map.json
+.download_log.jsonl
+.DS_Store
+.env
+*.log
+_scrape_debug.*

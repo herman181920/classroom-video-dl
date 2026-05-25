@@ -1,0 +1,2 @@
+# All Python scripts use only the standard library.
+# ffmpeg/ffprobe is required at the OS level (Homebrew: `brew install ffmpeg`).

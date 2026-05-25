@@ -1,0 +1,21 @@
+{
+  "name": "classroom-video-dl",
+  "version": "0.1.0",
+  "description": "Download videos from a Google Classroom course you have access to. Apache-2.0.",
+  "license": "Apache-2.0",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "auth": "node scripts/auth_profile.cjs",
+    "scrape": "node scripts/scrape_classroom.cjs",
+    "download": "node scripts/batch_download_session.cjs",
+    "download:parallel": "node scripts/download_parallel.cjs",
+    "verify": "python3 scripts/verify_recordings.py",
+    "pipeline": "bash scripts/run_video_pipeline.sh"
+  },
+  "dependencies": {
+    "playwright": "^1.60.0"
+  }
+}
