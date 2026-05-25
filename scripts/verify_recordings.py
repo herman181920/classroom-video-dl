@@ -1,7 +1,7 @@
-"""ffprobe every .mp4 in course-data/recordings/ and flag issues.
+"""ffprobe every .mp4 in ./recordings/ and flag issues.
 
 Usage:
-    python course-data/scripts/verify_recordings.py
+    python3 scripts/verify_recordings.py
 
 Reports per-file duration / size / streams. Cross-checks against
 videos_plan.json (if present): every plan entry should have a matching mp4

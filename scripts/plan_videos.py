@@ -1,7 +1,7 @@
 """Read a fresh classroom scrape and emit a download plan for every recording.
 
 Input:
-    course-data/scripts/plan_videos.py <fresh_scrape.json> <out_plan.json>
+    python3 scripts/plan_videos.py <fresh_scrape.json> <out_plan.json>
 
 Output (JSON):
     {
