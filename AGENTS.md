@@ -1,6 +1,6 @@
-# AGENTS.md — instructions for AI coding agents
+# AGENTS.md — runbook for AI coding agents
 
-You're reading this because a human cloned `classroom-video-dl` and asked you to set it up and run it. This file is your runbook.
+A human cloned this repo and wants their course videos downloaded. Read top-to-bottom before acting.
 
 ## What the user wants
 
@@ -24,7 +24,7 @@ If you understand this much, you can debug most failure modes. The exit-code tab
 
 **Course URL.** A link like `https://classroom.google.com/c/<course-id>` — the course they want videos from. They have to have access to it themselves; this tool doesn't bypass anything.
 
-If you can't infer it from context, ask: _"What's the Google Classroom course URL you want videos from?"_
+Ask: _"What's the Google Classroom course URL you want videos from?"_ Don't guess.
 
 Optional: ask if they have multiple Google accounts. If yes, ask for the email substring and export `USER_EMAIL`.
 
