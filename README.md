@@ -31,7 +31,7 @@ flowchart LR
     D --> E[Verify with ffprobe]
 ```
 
-The downloader uses a persistent Playwright browser profile and Google Drive's playback API. See [how it works](docs/how-it-works.md) for technical details and [troubleshooting](docs/troubleshooting.md) for common failures.
+The downloader uses a persistent Playwright browser profile and an undocumented Google Drive playback API, which may change. See [how it works](docs/how-it-works.md) for technical details and [troubleshooting](docs/troubleshooting.md) for common failures.
 
 ## Configuration
 
