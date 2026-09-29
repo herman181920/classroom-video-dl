@@ -62,4 +62,4 @@ Exit `0` if everything is clean, `1` if anything flagged.
 
 ## Why not yt-dlp?
 
-yt-dlp's Google Drive handler often fails for restricted-permission course videos — the kind your school grants you but doesn't let you "Download" via the right-click menu. The internal playback API + CDP stream sidesteps the download-permission check entirely (Drive lets you _watch_, we just record what comes down the wire).
+yt-dlp's Google Drive handler can fail for course videos that an account can view but cannot download through Drive's menu. This tool saves the playback stream available to the signed-in account. Check your course's rules before saving or sharing recordings.

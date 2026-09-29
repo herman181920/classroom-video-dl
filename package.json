@@ -16,6 +16,6 @@
     "pipeline": "bash scripts/run_video_pipeline.sh"
   },
   "dependencies": {
-    "playwright": "^1.60.0"
+    "playwright": "^1.63.0"
   }
 }

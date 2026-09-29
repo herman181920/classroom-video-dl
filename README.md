@@ -1,136 +1,50 @@
 # classroom-video-dl
 
-Download videos from a Google Classroom course you have access to. Works in headless Chromium via Playwright; no manual cookie copying.
+Download video attachments from a Google Classroom course that your account can view. The tool discovers videos in Classwork, downloads the available MP4 streams, and checks the files with `ffprobe`.
 
-> Designed to be set up by an AI coding agent. Tell Claude Code, Codex, or Cursor: _"set up classroom-video-dl and download my course videos"_ — it reads `AGENTS.md` and walks you through sign-in and download.
+## Requirements
 
-## What it does
-
-Given a Google Classroom course URL and your sign-in, it:
-
-1. Scrapes the **Classwork** page for every video attachment.
-2. Filters to videos (keyword/extension match — covers English and Hebrew terms).
-3. Downloads each video at the highest available quality, in parallel.
-4. Verifies every MP4 with `ffprobe` (flags truncations, missing audio, etc.).
-
-It uses the same Drive playback API your browser uses, with auth proxied through a persistent Playwright profile. No bypass of access controls — you only get what your account can already see.
-
-## Architecture
-
-How it fits together:
-
-```mermaid
-flowchart LR
-    user([You])
-    cvd["classroom-video-dl<br/>local CLI"]
-    classroom["Google Classroom"]
-    drive["Google Drive"]
-    user -->|sign in once,<br/>run commands| cvd
-    cvd -->|walks Classwork<br/>via Playwright| classroom
-    cvd -->|playback API +<br/>byte stream| drive
-```
-
-Inside the tool — the pipeline stages and where state lives:
-
-```mermaid
-flowchart TB
-    auth["auth_profile.cjs<br/>headed sign-in"]
-    scrape["scrape_classroom.cjs<br/>walks Classwork DOM"]
-    plan["plan_videos.py<br/>filters to videos"]
-    download["download_parallel.cjs<br/>CDP-streamed MP4s"]
-    verify["verify_recordings.py<br/>ffprobe sanity check"]
-    profile[("Playwright profile<br/>$COURSE_DL_PROFILE<br/>session cookies")]
-    scrapeOut[/"fresh_scrape.json"/]
-    planOut[/"videos_plan.json"/]
-    recordings[/"./recordings/*.mp4"/]
-
-    auth --> profile
-    profile --> scrape
-    scrape --> scrapeOut
-    scrapeOut --> plan
-    plan --> planOut
-    profile --> download
-    planOut --> download
-    download --> recordings
-    recordings --> verify
-```
+- Node.js 20+, Python 3.10+, `ffprobe`, and `jq`
+- A Google account with access to the course
+- Enough local disk space for the recordings
 
 ## Quick start
 
 ```bash
-# 1. Install
-git clone https://github.com/herman181920/classroom-video-dl
+git clone https://github.com/herman181920/classroom-video-dl.git
 cd classroom-video-dl
 npm install
 npx playwright install chromium
-
-# 2. Sign in (one-time — Chromium opens, you sign into Google manually)
 node scripts/auth_profile.cjs
-
-# 3. Run the full pipeline against your course
 ./scripts/run_video_pipeline.sh "https://classroom.google.com/c/<course-id>"
 ```
 
-MP4s land in `./recordings/`. The pipeline skips files already on disk, so re-running it is safe.
-
-## Step-by-step (if you prefer)
-
-```bash
-node scripts/auth_profile.cjs                                          # one-time sign-in
-node scripts/scrape_classroom.cjs "<COURSE_URL>" fresh_scrape.json     # scrape
-python3 scripts/plan_videos.py fresh_scrape.json videos_plan.json      # filter to videos
-node scripts/batch_download_session.cjs videos_plan.json               # download (sequential)
-# or, for parallel:
-N=3 node scripts/download_parallel.cjs videos_plan.json
-python3 scripts/verify_recordings.py                                   # ffprobe sanity check
-```
-
-## Environment variables
-
-| Var                 | Purpose                                                                                       | Default                                                                                |
-| ------------------- | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `USER_EMAIL`        | Match a specific signed-in Google account (substring of the account's aria-label, case-insensitive). Useful if you have multiple Google accounts. | unset — accepts the first signed-in account                                            |
-| `COURSE_DL_PROFILE` | Persistent Playwright profile directory.                                                       | `~/Library/Caches/course-dl/profile` (macOS), `~/.cache/course-dl/profile` (Linux)     |
-| `LOGIN`             | Force a headed Chromium window (used implicitly by `auth_profile.cjs`).                        | unset (headless)                                                                       |
-| `N`                 | Parallel download workers in `download_parallel.cjs`.                                          | `3`                                                                                    |
-| `SKIP_SCRAPE`       | In the pipeline, reuse an existing `fresh_scrape.json` instead of re-scraping.                 | unset                                                                                  |
-| `PY`                | Python interpreter used by the pipeline shell wrapper.                                         | `python3`                                                                              |
-
-## Prerequisites
-
-- Node.js ≥ 20
-- Python ≥ 3.10 (stdlib only — no `pip install` needed)
-- `ffmpeg` / `ffprobe` on `$PATH`
-- `jq` (used by the pipeline wrapper)
-- Disk space for the videos (~5–20 GB depending on course)
-
-Install on macOS: `brew install node python ffmpeg jq`.
+The sign-in command opens Chromium for you to sign in. Recordings are saved in `recordings/`. Re-running the pipeline skips completed downloads.
 
 ## How it works
 
-Each video on Google Classroom links to a Drive file. Drive's video player uses an internal playback API (`workspacevideo-pa.clients6.google.com/v1/drive/media/<id>/playback`) that returns signed MP4 URLs. The downloader calls that API with a `SAPISIDHASH` Authorization header (the same auth your browser tab uses), then streams the bytes through Chrome DevTools Protocol's `Fetch.takeResponseBodyAsStream` to disk. Auth state lives in a persistent Playwright profile so you only sign in once.
+```mermaid
+flowchart LR
+    A[Sign in] --> B[Scan Classwork]
+    B --> C[Select video attachments]
+    C --> D[Download MP4 streams]
+    D --> E[Verify with ffprobe]
+```
 
-Longer write-up: see [`docs/how-it-works.md`](docs/how-it-works.md).
+The downloader uses a persistent Playwright browser profile and Google Drive's playback API. See [how it works](docs/how-it-works.md) for technical details and [troubleshooting](docs/troubleshooting.md) for common failures.
 
-## Privacy & security
+## Configuration
 
-- **No access bypass.** This tool downloads only videos your authenticated Google account already has permission to view.
-- **Profile dir = session cookies.** `$COURSE_DL_PROFILE` (default `~/Library/Caches/course-dl/profile`) holds your Google login state. Treat it like a password — don't share, don't commit.
-- **`USER_EMAIL` is a substring match**, not a regex. Regex meta chars are escaped before use.
-- **No telemetry, no network calls** beyond Google's own Classroom / Drive endpoints.
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `COURSE_DL_PROFILE` | Directory containing the Playwright sign-in session | OS cache directory |
+| `USER_EMAIL` | Select an account by email substring | First signed-in account |
+| `N` | Parallel downloads | `3` |
+| `SKIP_SCRAPE` | Reuse `fresh_scrape.json` | Unset |
+| `PY` | Python interpreter for the pipeline | `python3` |
 
-## For AI coding agents
-
-See [`AGENTS.md`](AGENTS.md) for the runbook — what to ask the user for, what each command outputs, exit-code interpretation, and the explicit "I cannot drive the sign-in window" handoff to the human.
-
-## Troubleshooting
-
-See [`docs/troubleshooting.md`](docs/troubleshooting.md).
+The browser profile contains session cookies. Keep it private. The tool uses the playback stream available to your signed-in account; check your course's rules before saving or sharing recordings.
 
 ## License
 
-[Apache-2.0](LICENSE). See [`NOTICE`](NOTICE).
-
-## Acknowledgments
-
-The Drive playback API + CDP-streaming approach was developed during a personal project to mirror a Google Classroom course. Cleaned up and released so other students can reuse it.
+[Apache-2.0](LICENSE)
