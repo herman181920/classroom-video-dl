@@ -23,13 +23,7 @@ The sign-in command opens Chromium for you to sign in. Recordings are saved in `
 
 ## How it works
 
-```mermaid
-flowchart LR
-    A[Sign in] --> B[Scan Classwork]
-    B --> C[Select video attachments]
-    C --> D[Download MP4 streams]
-    D --> E[Verify with ffprobe]
-```
+![Download pipeline: sign in, scan Classwork, select video attachments, download MP4 streams, and verify with ffprobe.](docs/diagrams/download-pipeline.png)
 
 The downloader uses a persistent Playwright browser profile and an undocumented Google Drive playback API, which may change. See [how it works](docs/how-it-works.md) for technical details and [troubleshooting](docs/troubleshooting.md) for common failures.
 
